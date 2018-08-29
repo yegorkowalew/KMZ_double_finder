@@ -107,7 +107,10 @@ class Detail:
         self.size_workpiece = size_workpiece # Столбец: "Размеры заготовки" (указывать не обязательно)
         self.operations = operations # Столбец: "Операции" (указывать не обязательно)
         # self.shop Столбец: "Розцеховка" таблица будет разбита на листы в которых каждый цех по отдельности (указывать обязательно)
-        self.shop = shop.split("-") # разбиваем строку вида 104-101, на список [104, 101]
+        self.shop = str(shop).split("-") # разбиваем строку вида 104-101, на список [104, 101]
+        for st in self.shop:
+            st = st.replace('/','')
+        # print(self.shop)
         self.doubles = doubles # список дубликатов 
         self.row = row # поле для хранения номера строки
         self.unit_row = unit_row # Указываем строку родительского узла
@@ -199,11 +202,13 @@ if __name__ == '__main__':
 
     for detail in details.values(): # Список цехов
         for s in detail.shop:
+            s = s.replace('/','')
             if s in shop_list:
                 pass
             else:
                 shop_list.append(s)
     # sheet = work_wb[work_wb.sheetnames[0]] # берем первый лист в файле
+    print(shop_list)
     for shop in shop_list:
         if shop in work_wb.sheetnames:
             double_sheet = work_wb[shop]
@@ -211,6 +216,7 @@ if __name__ == '__main__':
             double_sheet = work_wb.create_sheet(shop) # создаем новый лист в файле
             new_sheet_list.append(double_sheet)
         else:
+            print(shop)
             double_sheet = work_wb.create_sheet(shop) # создаем новый лист в файле
             new_sheet_list.append(double_sheet)
 
@@ -359,5 +365,3 @@ if __name__ == '__main__':
             datetime.strftime(datetime.now(), "%H:%M:%S"),
             )
         )
-    print('Можно закрывать окно...')
-    time.sleep(1)
