@@ -1,5 +1,11 @@
 import openpyxl
 from copy import copy
+try: 
+    from openpyxl.cell import get_column_letter
+except ImportError:
+    from openpyxl.utils import get_column_letter
+
+from openpyxl.styles import Border, Side, Font, Alignment, PatternFill
 
 from datetime import datetime
 import time
@@ -42,23 +48,23 @@ first_row = 6
 end_coll = 0
 second_row = 0
 after_column = 8
-
+double_sheet_name = "Сортировка по узлам"
+shop_list = []
+new_sheet_list = []
 end_names = {
-        'npp': [1, "п/п",], 
-        'types': [2, "Наименование",], 
-        'name': [3, "Позиция",], 
-        'knot': [4, "узел",], 
-        'product': [5, "изделие",], 
-        'order': [6, "заказ",], 
-        'nzp': [7, "НЗП",], 
-        'massiv': [8, "Массив",], 
-        'size_clean': [9, "Размеры чист.",], 
-        'size_workpiece': [10, "Размеры заготовки",], 
-        'operations': [11, "Операции",], 
-        'shop': [12, "Розцеховка",], 
+        'npp': [1, "№ п/п", 3.7,],
+        'types': [2, "Наименование", "21",],
+        'name': [3, "Позиция", "36",],
+        'knot': [4, "Кол-во узел (шт.)", 3.7,],
+        'product': [5, "Кол-во изделие (шт.)", 3.7,],
+        'order': [6, "Кол-во заказ (шт.)", 3.7,],
+        'nzp': [7, "Кол-во НЗП (шт.)", 3.7,],
+        'massiv': [8, "Массив", 3.7,],
+        'size_clean': [9, "Размеры чист.", "26",],
+        'size_workpiece': [10, "Размеры заготовки", "26",],
+        'operations': [11, "Операции", "26",],
+        'shop': [12, "Розцеховка", "12",],
         }
-
-
 
 def if_num(cell):
     try:
@@ -84,16 +90,15 @@ class Unit:
         self.row = row # поле для хранения номера строки
 
 class Detail:
-    def __init__(self, npp, types, name, knot, product, order, nzp, massiv, size_clean, size_workpiece, operations, shop, doubles, row):
+    def __init__(self, npp, types, name, knot, product, order, nzp, massiv, size_clean, size_workpiece, operations, shop, doubles, row, unit_row):
         """Constructor for Detail"""
         self.npp = npp # "п/п" - Номер по порядку детали (Указывать не обязательно, желательно самому пронумеровать)
         self.types = types # Столбец: "Наименование" тип узла (указывать обязательно)
         self.name = name # Столбец "Позиция" (обязательный)
         self.knot = knot # Столбец "Узел" (не обязательный)
         self.product = product # Столбец "Изделие" (не обязательный)
-        # self.order = order # Столбец: "Кол-во заказ" по этому полю будут подсчитываться суммы дубликатов (указывать обязательно)
         if if_num(order):
-            self.order = eval(order)
+            self.order = eval(order) # Столбец: "Кол-во заказ" по этому полю будут подсчитываться суммы дубликатов (указывать обязательно)
         else:
             self.order = int(order)
         self.nzp = nzp # Столбец: "Кол-во НЗП" (указывать не обязательно)
@@ -101,10 +106,11 @@ class Detail:
         self.size_clean = size_clean # Столбец: "Размеры чист." (указывать не обязательно)
         self.size_workpiece = size_workpiece # Столбец: "Размеры заготовки" (указывать не обязательно)
         self.operations = operations # Столбец: "Операции" (указывать не обязательно)
-        # self.shop = shop # Столбец: "Розцеховка" таблица будет разбита на листы в которых каждый цех по отдельности (указывать обязательно)
+        # self.shop Столбец: "Розцеховка" таблица будет разбита на листы в которых каждый цех по отдельности (указывать обязательно)
         self.shop = shop.split("-") # разбиваем строку вида 104-101, на список [104, 101]
         self.doubles = doubles # список дубликатов 
         self.row = row # поле для хранения номера строки
+        self.unit_row = unit_row # Указываем строку родительского узла
 
 def work_with_dir():
     folder_for_find_xlsx = os.path.dirname(os.path.abspath(inspect.stack()[0][1])) # полный путь к папке из которой выполняется файл
@@ -124,10 +130,22 @@ if __name__ == '__main__':
 
     work_wb = file_to_wb(xls_file) # из файла открываем книгу
     sheet = work_wb[work_wb.sheetnames[0]] # берем первый лист в файле
-    new_sheet = work_wb.create_sheet("Посчитано") # создаем новый лист в файле
+    if double_sheet_name in work_wb.sheetnames:
+        double_sheet = work_wb[double_sheet_name]
+        work_wb.remove(double_sheet)
+        double_sheet = work_wb.create_sheet(double_sheet_name) # создаем новый лист в файле
+        new_sheet_list.append(double_sheet)
+    else:
+        double_sheet = work_wb.create_sheet(double_sheet_name) # создаем новый лист в файле
+        new_sheet_list.append(double_sheet)
 
     units = []
     details = {}
+
+    for row in range(1, sheet.max_row): # нашел последнюю строку в таблице
+        if sheet.cell(row=row, column=end_names.get('npp')[0]).value == "Уз.":
+            first_row = row
+            break
 
     for row in range(first_row, sheet.max_row): # нашел последнюю строку в таблице
         if sheet.cell(row=row, column=end_names.get('name')[0]).value:
@@ -138,6 +156,7 @@ if __name__ == '__main__':
 
     for row in range(first_row, second_row):
         if sheet.cell(row=row, column=1).value == "Уз.":
+            unit_row = row
             npp = 0
             unit = Unit(
             sheet.cell(row=row, column=end_names.get('types')[0]).value,
@@ -169,7 +188,8 @@ if __name__ == '__main__':
             sheet.cell(row=row, column=end_names.get('operations')[0]).value,
             sheet.cell(row=row, column=end_names.get('shop')[0]).value,
             [],
-            row,)
+            row,
+            unit_row)
             details.update({row:unit})
 
     for detail_for_add in details.values(): # нашел дубликаты и дописал их в поле .doubles
@@ -177,75 +197,167 @@ if __name__ == '__main__':
             if detail_for_add.name == detail.name:
                 detail_for_add.doubles.append(detail.row)
 
+    for detail in details.values(): # Список цехов
+        for s in detail.shop:
+            if s in shop_list:
+                pass
+            else:
+                shop_list.append(s)
+    # sheet = work_wb[work_wb.sheetnames[0]] # берем первый лист в файле
+    for shop in shop_list:
+        if shop in work_wb.sheetnames:
+            double_sheet = work_wb[shop]
+            work_wb.remove(double_sheet)
+            double_sheet = work_wb.create_sheet(shop) # создаем новый лист в файле
+            new_sheet_list.append(double_sheet)
+        else:
+            double_sheet = work_wb.create_sheet(shop) # создаем новый лист в файле
+            new_sheet_list.append(double_sheet)
+
     after_end_names = {}
     colum = 0
+    # Новый массив after_end_names со вставлеными столбцами уз.
     for key, value in end_names.items():
         if value[0] < after_column+1:
             after_end_names.update({key:value})
-        else: 
-            if value[0] < after_column+len(units):
+        else:
+            if value[0] == after_column+1:
                 colum = value[0]
                 for i in units:
-                    # print(i)
+                    after_end_names.update({i.row:[colum, i.name, 3.7,]})
                     colum += 1
-                    after_end_names.update({i.row:[colum, i.name]})
-        
-    # print(len(units))
-    # print(after_end_names)
-    # for key, value in after_end_names.items():
-    #     print(value[0])
-    # for detail_for_add in details:
-        # print(detail_for_add.shop)
+            if value[0] >= after_column+1:
+                value[0] = colum
+                after_end_names.update({key:value})
+                colum += 1
 
-    # new_sheet
-    # print(end_names['types'])
-    # for key, value in end_names.items():
-    #     strr = 'name'
-    #     try:
-    #         print(getattr(details[3], key))
-    #     except:
-    #         print('no')
+    border_1 = Border(left=Side(border_style='thin', color='000000'),
+                    right=Side(border_style='thin', color='000000'),
+                    top=Side(border_style='thin', color='000000'),
+                    bottom=Side(border_style='thin', color='000000'))
+
+    fill_1 = PatternFill(fgColor='D9D9D9', fill_type = 'solid')
+
+    font_1 = Font(name='Calibri',
+                    size=11,
+                    bold=True,
+                    italic=False,
+                    vertAlign=None,
+                    underline='none',
+                    strike=False,
+                    color='FF000000')
+    alignment_1 = Alignment(text_rotation=180, 
+                            wrap_text=False,
+                            shrink_to_fit=False, 
+                            indent=0
+    )
+
+    for nn_sheet in new_sheet_list:
+        for key, val in after_end_names.items():
+            nn_sheet.cell(row=first_row-1, column=val[0]).value = val[1]
+            nn_sheet.column_dimensions[get_column_letter(val[0])].width = float(val[2])
+            nn_sheet.row_dimensions[first_row-1].height = 120
 
     added_rows = []
-    row_step = first_row
+    zz = first_row
+    npp = 0
+    double_sheet = new_sheet_list[0]
     for row, detail in details.items():
         if row in added_rows:
             pass
         else:
             added_rows += detail.doubles
             sum_details = 0
-            for i in detail.doubles:
-                sum_details += sum_details + details.get(i).order
-            new_sheet.cell(row=row_step, column=end_names.get('types')[0]).value = detail.types
-            new_sheet.cell(row=row_step, column=end_names.get('name')[0]).value = detail.name
-            new_sheet.cell(row=row_step, column=end_names.get('knot')[0]).value = detail.knot
-            new_sheet.cell(row=row_step, column=end_names.get('product')[0]).value = detail.product
-            new_sheet.cell(row=row_step, column=end_names.get('order')[0]).value = sum_details
-            new_sheet.cell(row=row_step, column=end_names.get('nzp')[0]).value = detail.nzp
-            new_sheet.cell(row=row_step, column=end_names.get('massiv')[0]).value = detail.massiv
-            new_sheet.cell(row=row_step, column=end_names.get('size_clean')[0]).value = detail.size_clean
-            new_sheet.cell(row=row_step, column=end_names.get('size_workpiece')[0]).value = detail.size_workpiece
-            new_sheet.cell(row=row_step, column=end_names.get('operations')[0]).value = detail.operations
-            new_sheet.cell(row=row_step, column=end_names.get('shop')[0]).value = "-".join(detail.shop)
-            row_step += 1
-            # print(sum_details)
-            # print('----------')
+            npp += 1
+            for nn_sheet in new_sheet_list:
+                if nn_sheet.title == double_sheet_name:
+                    zz = nn_sheet.max_row+1
+                    for i in detail.doubles:
+                        sum_details = sum_details + details.get(i).order
+                        nn_sheet.cell(row=zz, column=after_end_names.get(details.get(i).unit_row)[0]).value = details.get(i).order
+                    nn_sheet.cell(row=zz, column=after_end_names.get('npp')[0]).value = npp
+                    nn_sheet.cell(row=zz, column=after_end_names.get('types')[0]).value = detail.types
+                    nn_sheet.cell(row=zz, column=after_end_names.get('name')[0]).value = detail.name
+                    nn_sheet.cell(row=zz, column=after_end_names.get('knot')[0]).value = detail.knot
+                    nn_sheet.cell(row=zz, column=after_end_names.get('product')[0]).value = detail.product
+                    nn_sheet.cell(row=zz, column=after_end_names.get('order')[0]).value = sum_details
+                    nn_sheet.cell(row=zz, column=after_end_names.get('nzp')[0]).value = detail.nzp
+                    nn_sheet.cell(row=zz, column=after_end_names.get('massiv')[0]).value = detail.massiv
+                    nn_sheet.cell(row=zz, column=after_end_names.get('size_clean')[0]).value = detail.size_clean
+                    nn_sheet.cell(row=zz, column=after_end_names.get('size_workpiece')[0]).value = detail.size_workpiece
+                    nn_sheet.cell(row=zz, column=after_end_names.get('operations')[0]).value = detail.operations
+                    nn_sheet.cell(row=zz, column=after_end_names.get('shop')[0]).value = "-".join(detail.shop)
+                    sum_details = 0
+                if nn_sheet.title in detail.shop:
+                    zz = nn_sheet.max_row+1
+                    for i in detail.doubles:
+                        sum_details = sum_details + details.get(i).order
+                        nn_sheet.cell(row=zz, column=after_end_names.get(details.get(i).unit_row)[0]).value = details.get(i).order
+                    nn_sheet.cell(row=zz, column=after_end_names.get('npp')[0]).value = npp
+                    nn_sheet.cell(row=zz, column=after_end_names.get('types')[0]).value = detail.types
+                    nn_sheet.cell(row=zz, column=after_end_names.get('name')[0]).value = detail.name
+                    nn_sheet.cell(row=zz, column=after_end_names.get('knot')[0]).value = detail.knot
+                    nn_sheet.cell(row=zz, column=after_end_names.get('product')[0]).value = detail.product
+                    nn_sheet.cell(row=zz, column=after_end_names.get('order')[0]).value = sum_details
+                    nn_sheet.cell(row=zz, column=after_end_names.get('nzp')[0]).value = detail.nzp
+                    nn_sheet.cell(row=zz, column=after_end_names.get('massiv')[0]).value = detail.massiv
+                    nn_sheet.cell(row=zz, column=after_end_names.get('size_clean')[0]).value = detail.size_clean
+                    nn_sheet.cell(row=zz, column=after_end_names.get('size_workpiece')[0]).value = detail.size_workpiece
+                    nn_sheet.cell(row=zz, column=after_end_names.get('operations')[0]).value = detail.operations
+                    nn_sheet.cell(row=zz, column=after_end_names.get('shop')[0]).value = "-".join(detail.shop)
+                    sum_details = 0
+            # zz = double_sheet.max_row+1
 
-    # for row in range(1, len(details)):
-        # print(len(details))
-        # detail = details[row-1]
-        # print(detail.doubles)
-        # for key, value in end_names.items():
-            # new_sheet.cell(row=row, column=value[0]).value = str(getattr(detail, key))
+    for key, val in end_names.items():
+        sheet.column_dimensions[get_column_letter(val[0])].width = float(val[2])
 
-    work_wb.save(xls_file)
+    sheet.row_dimensions[first_row-1].height = 120
     
-    # from myfolder.myfile import myfunc
+    for nn_sheet in new_sheet_list:
+        for colum in range(after_column+1, after_column+len(units)+1): # Закрасил столбцы с узлами
+            for row in range(first_row, nn_sheet.max_row+1):
+                nn_sheet.cell(row=row, column=colum).fill = fill_1
+    
+    for nn_sheet in new_sheet_list:
+        for row in range(first_row, nn_sheet.max_row+1):
+            nn_sheet.cell(row=row, column=after_end_names.get('order')[0]).fill = fill_1
 
-    print("Завершил работу с файлом: %s. За %s секунд. Время: %s"
+    for nn_sheet in new_sheet_list:
+        for i in range(1, nn_sheet.max_column+1):
+            nn_sheet.cell(row=first_row-1, column=i).fill = fill_1
+            nn_sheet.cell(row=first_row-1, column=i).border = border_1
+            nn_sheet.cell(row=first_row-1, column=i).font = font_1
+            for key, value in after_end_names.items():
+                if value[2] == 3.7:
+                    nn_sheet.cell(row=first_row-1, column=value[0]).alignment = alignment_1
+            for cell in range(first_row, nn_sheet.max_row+1):
+                nn_sheet.cell(row=cell, column=i).border = border_1
+
+    for nn_sheet in new_sheet_list:
+        for coll in range(2, 4):
+            for row in range(1, first_row-1):
+                nn_sheet.cell(row=row, column=coll)._style = copy(sheet.cell(row=row, column=coll)._style)
+                nn_sheet.cell(row=row, column=coll).value = sheet.cell(row=row, column=coll).value
+
+    new_file_name = []
+    for row in range(1, first_row-1):
+                new_file_name.append(str(sheet.cell(row=row, column=3).value))
+
+    folder_for_find_xlsx = os.path.dirname(os.path.abspath(inspect.stack()[0][1]))
+    try:
+        new_file_name[-1] = time.strftime('%Y.%m.%d', time.strptime(new_file_name[-1], '%Y-%m-%d %H:%M:%S'))
+    except:
+        pass
+
+    new_file_name_path = folder_for_find_xlsx + "\\" + ' - '.join(new_file_name)+".xlsx"
+
+    work_wb.save(new_file_name_path)
+    print("Сохранил файл с новым именем: %s. За %s секунд. Время: %s"
         %(
-            xls_file,
+            new_file_name_path,
             round(time.process_time() - start_time, 3),
             datetime.strftime(datetime.now(), "%H:%M:%S"),
             )
         )
+    print('Можно закрывать окно...')
+    time.sleep(1)
