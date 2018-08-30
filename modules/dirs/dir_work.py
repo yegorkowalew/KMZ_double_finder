@@ -1,7 +1,8 @@
 import os
 import inspect
+import time
 
-select = {0: "Все"}
+# select = {0: "Все"}
 
 def work_with_dir():
     folder_for_find_xlsx = os.path.dirname(os.path.abspath(inspect.stack()[0][1])) # полный путь к папке из которой выполняется файл
@@ -13,46 +14,56 @@ def work_with_dir():
 
 def list_dir():
     folder_for_find_xlsx = os.path.dirname(os.path.abspath(inspect.stack()[0][1])) # полный путь к папке из которой выполняется файл
-    ii = 1
+    list_dir = [] # список файлов с полными путями
     for file in os.listdir(folder_for_find_xlsx): # во всех файлах папки
             if file.endswith(".xlsx"): # находим файл совпадающий с шаблоном
-                select.update({ii:file})
-                ii += 1
-    return select
+                list_dir.append(file) # добавляем файл, с полным путем, подходящий шаблону, в список
+    return list_dir
 
+def check_input(files_lst, user_input):
+    files_list = set()
+    failed = set()
+    user_input = user_input.split(' ')
+    for val in user_input:
+        if val == '':
+            return files_lst, []
+        try:
+            num = int(val)
+            if num == 0:
+                for f in files_lst:
+                    files_list.add(f)
+            elif num < 0 or num > len(files_lst):
+                failed.add(val)
+            else:
+                files_list.add(files_lst[num - 1])
+        except:
+            failed.add(val)
+    return list(files_list), list(failed)
 
-if __name__ == '__main__':
+def user_input_work():
     print('Какие файлы обрабатывать?')
-    for key, val in list_dir().items():
-        print(key, ' ', val)
+    i = 1
+    for val in list_dir():
+        print(i, ' ', val)
+        i += 1
     print('Введите ответ. Можно выбрать несколько вариантов через пробел.')
     user_input = input()
-    user_input = user_input.split(' ')
-    false_int_user_input = []
-    max_input = 0
-    for int_user_input in user_input:
-        try:
-            int_user_input = int(int_user_input)
-        except:
-            false_int_user_input.append(int_user_input)
+    for_work = check_input(list_dir(), user_input)
+    if for_work[1] == []:
+        print('Обрабатываю файлы:\n','\n '.join(for_work[0]))
+        return for_work[0]
+    else:
+        if for_work[0] == []:
+            print('Обрабатывать нечего.\n Неверный ввод: ', ', '.join(for_work[1]))
+            print('Можно закрыть окно.')
+            time.sleep(5)
+            raise SystemExit
+        else:
+            print('Обрабатываю файлы:\n','\n '.join(for_work[0]))
+            print('Неверный ввод: ', ', '.join(for_work[1]))
+            return for_work[0]
 
-    user_input = list(set(user_input) - set(false_int_user_input))
-
-    # print(user_input)
-    print(max(user_input))
-    # dd = 
-    # print()
-    if (max(user_input)) > (max(select.keys())):
-        print('yo')
-        
-
-    # for int_user_input in user_input:
-    #     try:
-    #         if int_user_input > max_input:
-    #             false_int_user_input.append(user_input.pop(user_input.index(int_user_input)))
-    #     except:
-    #         false_int_user_input.append(int_user_input)
-    # print(false_int_user_input)
-    # print(list(set(user_input) & set(false_int_user_input)))
-    
-    # print()
+if __name__ == '__main__':
+    user_input_work()
+    print('-----------')
+    time.sleep(50)
