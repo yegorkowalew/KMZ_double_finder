@@ -127,7 +127,7 @@ def work(work_filename, work_dir, exit_files_dir):
     units = []
     details = {}
 
-    for row in range(1, sheet.max_row): # нашел последнюю строку в таблице
+    for row in range(1, sheet.max_row): # нашел первую строку в таблице
         if sheet.cell(row=row, column=end_names.get('npp')[0]).value == "Уз.":
             first_row = row
             break
@@ -365,7 +365,69 @@ def sum_files(work_dir, exit_files_dir):
             new_sheet.cell(row=i, column=4).value = sheet.cell(row=row, column=6).value
             new_sheet.cell(row=i, column=5).value = sheet.cell(row=row, column=size_clean).value
             new_sheet.cell(row=i, column=6).value = sheet.cell(row=row, column=size_workpiece).value
-    wb.save(exit_files_dir +'\\file.xlsx')
+
+    units = []
+    details = {}
+
+    for row in range(1, sheet.max_row): # нашел первую строку в таблице
+        if sheet.cell(row=row, column=end_names.get('npp')[0]).value == "Уз.":
+            first_row = row
+            break
+    
+    for row in range(1, sheet.max_row): # нашел последнюю строку в таблице
+        if sheet.cell(row=row, column=end_names.get('name')[0]).value:
+            second_row = row+1
+
+    print('Последняя обрабатываемая строка в таблице: '+str(second_row))
+
+    for col in range(1, sheet.max_column): # нашел последний столбец в таблице
+        end_coll = col
+
+    for row in range(1, second_row):
+        if sheet.cell(row=row, column=1).value == "Уз.":
+            print('-')
+            print('| Нашел узел: '+str(sheet.cell(row=row, column=3).value))
+            unit_row = row
+            npp = 0
+            unit = Unit(
+            sheet.cell(row=row, column=end_names.get('types')[0]).value,
+            sheet.cell(row=row, column=end_names.get('name')[0]).value,
+            sheet.cell(row=row, column=end_names.get('knot')[0]).value,
+            sheet.cell(row=row, column=end_names.get('product')[0]).value,
+            sheet.cell(row=row, column=end_names.get('order')[0]).value,
+            sheet.cell(row=row, column=end_names.get('nzp')[0]).value,
+            sheet.cell(row=row, column=end_names.get('massiv')[0]).value,
+            sheet.cell(row=row, column=end_names.get('size_clean')[0]).value,
+            sheet.cell(row=row, column=end_names.get('size_workpiece')[0]).value,
+            sheet.cell(row=row, column=end_names.get('operations')[0]).value,
+            sheet.cell(row=row, column=end_names.get('shop')[0]).value,
+            row,)
+            units.append(unit)
+        else:
+            print('-- Нашел деталь: '+ str(sheet.cell(row=row, column=3).value))
+            npp +=1
+            unit = Detail(
+            npp,
+            sheet.cell(row=row, column=end_names.get('types')[0]).value,
+            sheet.cell(row=row, column=end_names.get('name')[0]).value,
+            sheet.cell(row=row, column=end_names.get('knot')[0]).value,
+            sheet.cell(row=row, column=end_names.get('product')[0]).value,
+            sheet.cell(row=row, column=end_names.get('order')[0]).value,
+            sheet.cell(row=row, column=end_names.get('nzp')[0]).value,
+            sheet.cell(row=row, column=end_names.get('massiv')[0]).value,
+            sheet.cell(row=row, column=end_names.get('size_clean')[0]).value,
+            sheet.cell(row=row, column=end_names.get('size_workpiece')[0]).value,
+            sheet.cell(row=row, column=end_names.get('operations')[0]).value,
+            sheet.cell(row=row, column=end_names.get('shop')[0]).value,
+            [],
+            row,
+            unit_row)
+            details.update({row:unit})
+    
+    print(units)
+    print('--------------')
+    print(details)
+    # wb.save(exit_files_dir +'\\file.xlsx')
 
 
 if __name__ == '__main__':
