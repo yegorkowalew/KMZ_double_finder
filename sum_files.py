@@ -40,14 +40,6 @@ if __name__ == '__main__':
             new_sheet.cell(row=i, column=3).value = sheet.cell(row=row, column=6).value
             new_sheet.cell(row=i, column=4).value = sheet.cell(row=row, column=9).value
             new_sheet.cell(row=i, column=5).value = sheet.cell(row=row, column=10).value
-            # new_sheet.cell(row=i, column=6).value = sheet.cell(row=row, column=7).value
-            # new_sheet.cell(row=i, column=7).value = sheet.cell(row=row, column=8).value
-            # new_sheet.cell(row=i, column=8).value = sheet.cell(row=row, column=3).value
-            # for coll in range(1, 11):
-                # print(sheet.cell(row=row, column=coll).value)
-                # sheet.cell(row=row, column=coll).value
-                # new_sheet.cell(row=i, column=coll)._style = copy(sheet.cell(row=row, column=coll)._style)
-                
 
 
     wb.save(os.path.dirname(os.path.abspath(inspect.stack()[0][1]))+'\\file.xlsx')
