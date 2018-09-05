@@ -340,94 +340,107 @@ def big_trabl(xls_file, trabl):
     exit
 
 def sum_files(work_dir, exit_files_dir):
+    num_do_summ = 9
+    num_posle_summ = 4
+    header1 = []
 
     wb = openpyxl.Workbook()
     new_sheet = wb[wb.sheetnames[0]] # берем первый лист в файле
     i=0
+    exit_mass = []
     for need_file in work_with_dir(work_dir):
         print('Работаю с файлом: ' + work_dir + '\\' + need_file)
         work_wb = file_to_wb(work_dir + '\\' + need_file)
         sheet = work_wb[double_sheet_name]
-        
-        for col in range(8, sheet.max_column):
-            if sheet.cell(row=5, column=col).value == "Размеры чист.":
-                size_clean = col
-            if sheet.cell(row=5, column=col).value == "Размеры заготовки":
-                size_workpiece = col
-        i+=1
-        new_sheet.cell(row=i, column=1).value = "Уз."
-        new_sheet.cell(row=i, column=2).value = need_file
-
-        for row in range(6, sheet.max_row):
-            i+=1
-            new_sheet.cell(row=i, column=2).value = sheet.cell(row=row, column=2).value
-            new_sheet.cell(row=i, column=3).value = sheet.cell(row=row, column=3).value
-            new_sheet.cell(row=i, column=4).value = sheet.cell(row=row, column=6).value
-            new_sheet.cell(row=i, column=5).value = sheet.cell(row=row, column=size_clean).value
-            new_sheet.cell(row=i, column=6).value = sheet.cell(row=row, column=size_workpiece).value
-
-    units = []
-    details = {}
-
-    for row in range(1, sheet.max_row): # нашел первую строку в таблице
-        if sheet.cell(row=row, column=end_names.get('npp')[0]).value == "Уз.":
-            first_row = row
-            break
+        for row in sheet.iter_rows():
+            o = []
+            o.append(need_file)
+            for z in row:
+                o.append(z.value)
+            if o[2] == "Служебная №:" or o[2] == "Заказчик:" or o[2] == "Заказ №:" or o[2] == "Отгрузка:":
+                print('Откидываю строку потому что: '+o[2])
+            elif  o[2] == "Наименование":
+                for i in o[num_do_summ:len(o)-num_posle_summ]:
+                    header1.append(str(i))
+            else:
+                exit_mass.append(o)
     
-    for row in range(1, sheet.max_row): # нашел последнюю строку в таблице
-        if sheet.cell(row=row, column=end_names.get('name')[0]).value:
-            second_row = row+1
+    max_elem = 0
+    iter_colls = 12 #количество столбцов без столбцов которые добавлены при поиске дублей
+    for i in exit_mass:
+        if max_elem<len(i):
+            max_elem = len(i)
+    # print(max_elem)
+    files_list = []
 
-    print('Последняя обрабатываемая строка в таблице: '+str(second_row))
-
-    for col in range(1, sheet.max_column): # нашел последний столбец в таблице
-        end_coll = col
-
-    for row in range(1, second_row):
-        if sheet.cell(row=row, column=1).value == "Уз.":
-            print('-')
-            print('| Нашел узел: '+str(sheet.cell(row=row, column=3).value))
-            unit_row = row
-            npp = 0
-            unit = Unit(
-            sheet.cell(row=row, column=end_names.get('types')[0]).value,
-            sheet.cell(row=row, column=end_names.get('name')[0]).value,
-            sheet.cell(row=row, column=end_names.get('knot')[0]).value,
-            sheet.cell(row=row, column=end_names.get('product')[0]).value,
-            sheet.cell(row=row, column=end_names.get('order')[0]).value,
-            sheet.cell(row=row, column=end_names.get('nzp')[0]).value,
-            sheet.cell(row=row, column=end_names.get('massiv')[0]).value,
-            sheet.cell(row=row, column=end_names.get('size_clean')[0]).value,
-            sheet.cell(row=row, column=end_names.get('size_workpiece')[0]).value,
-            sheet.cell(row=row, column=end_names.get('operations')[0]).value,
-            sheet.cell(row=row, column=end_names.get('shop')[0]).value,
-            row,)
-            units.append(unit)
+    start = 0
+    finish = 0
+    len_insert = 0
+    append_mas = []
+    exit_mass2 = []
+    for i in exit_mass:
+        if i[0] not in files_list:
+            files_list.append(i[0])
+            len_insert += len(i[num_do_summ:len(i)-num_posle_summ])
+    for i in range(0, len_insert):
+        append_mas.append(None)
+    files_list.clear()
+    files_list.append(exit_mass[0][0])
+    start2 = 0
+    for i in exit_mass:
+        if i[0] not in files_list:
+            files_list.append(i[0])
+            start += start2
         else:
-            print('-- Нашел деталь: '+ str(sheet.cell(row=row, column=3).value))
-            npp +=1
-            unit = Detail(
-            npp,
-            sheet.cell(row=row, column=end_names.get('types')[0]).value,
-            sheet.cell(row=row, column=end_names.get('name')[0]).value,
-            sheet.cell(row=row, column=end_names.get('knot')[0]).value,
-            sheet.cell(row=row, column=end_names.get('product')[0]).value,
-            sheet.cell(row=row, column=end_names.get('order')[0]).value,
-            sheet.cell(row=row, column=end_names.get('nzp')[0]).value,
-            sheet.cell(row=row, column=end_names.get('massiv')[0]).value,
-            sheet.cell(row=row, column=end_names.get('size_clean')[0]).value,
-            sheet.cell(row=row, column=end_names.get('size_workpiece')[0]).value,
-            sheet.cell(row=row, column=end_names.get('operations')[0]).value,
-            sheet.cell(row=row, column=end_names.get('shop')[0]).value,
-            [],
-            row,
-            unit_row)
-            details.update({row:unit})
-    
-    print(units)
-    print('--------------')
-    print(details)
-    # wb.save(exit_files_dir +'\\file.xlsx')
+            start2 = len(i[num_do_summ:len(i)-num_posle_summ])
+        sp1 = [None] * start
+        sp2 = i[num_do_summ:len(i)-num_posle_summ]
+        sp3 = [None] * (len_insert - len(sp2) - start)
+        sp4 = i[0:num_do_summ]
+        sp5 = i[0-num_posle_summ:]
+        sp6 = sp4 + sp1 + sp2 + sp3 + sp5
+        exit_mass2.append(sp6.copy())
+        sp1.clear()
+        sp2.clear()
+        sp3.clear()
+        sp4.clear()
+        sp5.clear()
+        sp6.clear()
+    # print(exit_mass2)
+    exit_mass.clear()
+    for row in exit_mass2:
+        new_sheet.append(row)
+
+    for i in exit_mass2:
+        # print(i)
+        editable_row = i.copy()
+        for z in exit_mass2:
+            if i[3] == z[3]:
+                # print('Дубль')
+                for x in range(0, len(editable_row)):
+                    if editable_row[x] == None and x != 6:
+                        editable_row[x] = z[x]
+                    if x == 6:
+                        editable_row[x] = editable_row[x] + z[x]
+        exit_mass.append(editable_row.copy())
+        editable_row.clear()
+    # print(exit_mass)
+    # wb.append('new')
+    # sheet2 = work_wb['new']
+    header = [None,'№ п/п', 'Наименование','Позиция','Кол-во узел (шт.)','Кол-во изделие (шт.)','Кол-во заказ (шт.)','Кол-во НЗП (шт.)','Массив']
+    header2 = ['Размеры чист.','Размеры заготовки','Операции','Розцеховка']
+    mass = header + header1 + header2
+    hed = list(['non', 'non','non','non','non','non','non','non','non','non','non','non','non','non','non','non','non','non','non','non','non','non',])
+    # exit_mass.insert(0, hed)
+    # exit_mass.insert(0, mass)
+    # print(exit_mass)
+    for row in range(0, len(exit_mass)):
+        for col in range(0, len(exit_mass[0])):
+            new_sheet.cell(row=row+1, column=col+1).value = exit_mass[row][col]
+    # for row in exit_mass:
+    #     new_sheet.append(row)
+
+    wb.save(exit_files_dir +'\\file.xlsx')
 
 
 if __name__ == '__main__':
