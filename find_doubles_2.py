@@ -123,12 +123,17 @@ class Detail:
 
 
 def work_with_dir(folder_for_find_xlsx):
+    
     # folder_for_find_xlsx = os.path.dirname(os.path.abspath(inspect.stack()[0][1])) # полный путь к папке из которой выполняется файл
     list_files = []  # список файлов с полными путями
     for file in os.listdir(folder_for_find_xlsx):  # во всех файлах папки
         if file.endswith(".xlsx"):  # находим файл совпадающий с шаблоном
             # добавляем файл, с полным путем, подходящий шаблону, в список
             list_files.append(os.path.join(file))
+    if list_files == []:
+        print('Нету файлов с которыми работать')
+        time.sleep(30)
+        exit(0)
     return list_files
 
 
@@ -607,12 +612,19 @@ if __name__ == '__main__':
     folder_for_find_xlsx = os.path.dirname(
         os.path.abspath(inspect.stack()[0][1]))
 
+    # создаю папку "exit"
+    mypath = folder_for_find_xlsx+'\\exit'
+    if not os.path.isdir(mypath):
+        print('Нету папки "exit", создаю.')
+        os.makedirs(mypath)
+
     # for xls_file in work_with_dir(folder_for_find_xlsx):
     #     print(xls_file)
         # work(xls_file, folder_for_find_xlsx, exit_files_dir)
         
     try:
         for xls_file in work_with_dir(folder_for_find_xlsx):
+            
             print('Работаю с файлом: %s' % (xls_file))
             work(xls_file, folder_for_find_xlsx, exit_files_dir)
     except ValueError as trabl:
@@ -626,8 +638,8 @@ if __name__ == '__main__':
         time.sleep(30)
 
 
-    # print('Можно закрывать.')
-    # time.sleep(30)
+    print('Можно закрывать.')
+    time.sleep(30)
     # folder_for_new_xlsx = folder_for_find_xlsx + '\\' + exit_files_dir
 
     # try:
