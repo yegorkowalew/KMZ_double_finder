@@ -11,7 +11,16 @@ from datetime import datetime
 import time
 import os
 import inspect
-from modules.dirs.dir_work import user_input_work
+# from modules.dirs.dir_work import user_input_work
+
+fill_1 = PatternFill(fgColor='D9D9D9', fill_type='solid')
+fill_2 = PatternFill(fgColor='F7E2AE', fill_type='solid')
+# C:\work\KMZ_double_finder>pyinstaller find_doubles_2.py --onefile
+
+border_1 = Border(left=Side(border_style='thin', color='000000'),
+                      right=Side(border_style='thin', color='000000'),
+                      top=Side(border_style='thin', color='000000'),
+                      bottom=Side(border_style='thin', color='000000'))
 
 exit_files_dir = 'exit'
 first_row = 6
@@ -124,7 +133,12 @@ def work_with_dir(folder_for_find_xlsx):
 
 
 def file_to_wb(file_name):
-    return openpyxl.load_workbook(filename=file_name)
+    try:
+        return openpyxl.load_workbook(filename=file_name)
+    except:
+        print('Ошибка открытия файла: %s' % (file_name))
+        exit(0)
+    
 
 
 def work(work_filename, work_dir, exit_files_dir):
@@ -163,8 +177,7 @@ def work(work_filename, work_dir, exit_files_dir):
 
     for row in range(first_row, second_row):
         if sheet.cell(row=row, column=1).value == "Уз.":
-            print('-')
-            print('| Нашел узел: '+str(sheet.cell(row=row, column=3).value))
+            print('Нашел узел: '+str(sheet.cell(row=row, column=3).value))
             unit_row = row
             npp = 0
             unit = Unit(
@@ -185,7 +198,7 @@ def work(work_filename, work_dir, exit_files_dir):
                 row,)
             units.append(unit)
         else:
-            print('-- Нашел деталь: '+sheet.cell(row=row, column=3).value)
+            # print('-- Нашел деталь: '+sheet.cell(row=row, column=3).value)
             npp += 1
             unit = Detail(
                 npp,
@@ -231,12 +244,9 @@ def work(work_filename, work_dir, exit_files_dir):
                 after_end_names.update({key: new_value})
                 m_colum += 1
 
-    border_1 = Border(left=Side(border_style='thin', color='000000'),
-                      right=Side(border_style='thin', color='000000'),
-                      top=Side(border_style='thin', color='000000'),
-                      bottom=Side(border_style='thin', color='000000'))
 
-    fill_1 = PatternFill(fgColor='D9D9D9', fill_type='solid')
+
+    
 
     font_1 = Font(name='Calibri',
                   size=11,
@@ -400,8 +410,8 @@ def work(work_filename, work_dir, exit_files_dir):
 def big_trabl(xls_file, trabl):
     print('Что-то пошло не так при первичной обработке файла: %s. \nПитончег говорит: %s' %
           (xls_file, trabl))
-    time.sleep(1)
-    exit
+    time.sleep(60)
+    exit(0)
 
 
 def sum_files(work_dir, exit_files_dir):
@@ -500,33 +510,128 @@ def sum_files(work_dir, exit_files_dir):
     for row in exit_mass2:
         new_sheet.append(row)
 
-    wb.save(exit_files_dir + '\\file.xlsx')
+    
+    try:
+        wb.save(exit_files_dir + '\\file.xlsx')
+    except PermissionError as identifier:
+        print('Не получилось сохранить файл: %s' % (exit_files_dir + '\\file.xlsx'))
+        print('Скорей всего он открыт в редакторе')
+        exit(0)
 
-    # work_wb = file_to_wb(exit_files_dir +'\\file.xlsx')
-    # sheet = work_wb['Sheet']
-    # for row in range(1, sheet.max_row):
-    #     for cel in range(1, sheet.max_column):
-    #         print(sheet.cell(row=row, column=cel).value)
+    work_wb = file_to_wb(exit_files_dir +'\\file.xlsx')
+    sheet = work_wb['Sheet']
+    sum_mass = []
+    def recell(itm):
+        return itm.value
+    for row in sheet.iter_rows():
+        sum_mass.append(list(map(recell, row)))
+
+    hhed1 = sum_mass[0]
+    hhed2 = sum_mass[1]
+    del sum_mass[0]
+    del sum_mass[0]
+    double_sheet = work_wb.create_sheet('Итог') # создаем новый лист в файле
+    double_sheet.append(hhed1)
+    double_sheet.append(hhed2)
+    doubles_rows = []
+    for row in sum_mass:
+        exit_row = row
+        if row[1] not in doubles_rows:
+            ss = 0
+            for row2 in sum_mass:
+                if row[1] == row2[1]:
+                    doubles_rows.append(row2[1])
+                    ss += int(row2[4])
+                    # сравниваем столбцы дублирующихся строк и выводим несовпадающие:
+                    if row2[0] != exit_row[0]:
+                        print('У %s %s не совпадает Наименование: "%s" и "%s"' %(row2[0], row2[1], row2[0], exit_row[0]))
+                        exit_row[0] = '|'.join([str(row2[0]), str(exit_row[0]), 'W'])
+
+                    if row2[19] != exit_row[19]:
+                        print('У %s %s не совпадает Розцеховка: "%s" и "%s"' %(row2[0], row2[1], row2[19], exit_row[19]))
+                        exit_row[19] = '|'.join([str(row2[19]), str(exit_row[19]), 'W'])
+
+                    if row2[18] != exit_row[18]:
+                        print('У %s %s не совпадают Операции: "%s" и "%s"' %(row2[0], row2[1], row2[18], exit_row[18]))
+                        if row2[18] != None:
+                            print('v')
+                            exit_row[18] = '|'.join([str((row2[18])), str(exit_row[18]), 'W'])
+                        # print(exit_row)
+
+                    if row2[17] != exit_row[17]:
+                        print('У %s %s не совпадают Размеры заготовки: "%s" и "%s"' %(row2[0], row2[1], row2[17], exit_row[17]))
+                        exit_row[17] = '|'.join([str(row2[17]), str(exit_row[17]), 'W'])
+
+                    if row2[16] != exit_row[16]:
+                        print('У %s %s не совпадают Размеры чист.: "%s" и "%s"' %(row2[0], row2[1], row2[16], exit_row[16]))
+                        exit_row[16] = '|'.join([str(row2[16]), str(exit_row[16]), 'W'])
+
+                    for rr in range(0, len(row2)):
+                        if row2[rr] != None and exit_row[rr] == None:
+                            exit_row[rr] = row2[rr]
+
+            exit_row[4] = ss
+            ss = 0
+            double_sheet.append(exit_row)
+
+    try:
+        work_wb.save(exit_files_dir + '\\file.xlsx')
+    except PermissionError as identifier:
+        print('Не получилось сохранить файл: %s' % (exit_files_dir + '\\file.xlsx'))
+        print('Скорей всего он открыт в редакторе')
+        exit(0)
+
+    work_wb = file_to_wb(exit_files_dir +'\\file.xlsx')
+    sheet = work_wb['Итог']
+
+            # nn_sheet.cell(row=first_row-1, column=i).border = border_1
+            # nn_sheet.cell(row=first_row-1, column=i).font = font_1
+
+    for row in range(1, sheet.max_row+1):
+        for col in range(1, sheet.max_column+1):
+            # print(sheet.cell(row=row, column=col).value)
+            sheet.cell(row=row, column=col).border = border_1
+
+            # sheet.cell(row=row, column=col).fill = fill_2
+
+    try:
+        work_wb.save(exit_files_dir + '\\file.xlsx')
+    except PermissionError as identifier:
+        print('Не получилось сохранить файл: %s' % (exit_files_dir + '\\file.xlsx'))
+        print('Скорей всего он открыт в редакторе')
+        exit(0)
 
 
 if __name__ == '__main__':
     # полный путь к папке из которой выполняется файл
     folder_for_find_xlsx = os.path.dirname(
         os.path.abspath(inspect.stack()[0][1]))
-    # try:
-    #     for xls_file in work_with_dir(folder_for_find_xlsx):
-    #         work(xls_file, folder_for_find_xlsx, exit_files_dir)
-    # except ValueError as trabl:
-    #     big_trabl(xls_file, trabl)
-    # except FileNotFoundError as trabl:
-    #     big_trabl(xls_file, trabl)
-    # except PermissionError as trabl:
-    #     big_trabl(xls_file, trabl)
 
-    folder_for_new_xlsx = folder_for_find_xlsx + '\\' + exit_files_dir
-
+    # for xls_file in work_with_dir(folder_for_find_xlsx):
+    #     print(xls_file)
+        # work(xls_file, folder_for_find_xlsx, exit_files_dir)
+        
     try:
-        sum_files(folder_for_new_xlsx, folder_for_find_xlsx)
-    except KeyError as trabl:
-        xls_file = 'сам знаешь'
+        for xls_file in work_with_dir(folder_for_find_xlsx):
+            print('Работаю с файлом: %s' % (xls_file))
+            work(xls_file, folder_for_find_xlsx, exit_files_dir)
+    except ValueError as trabl:
         big_trabl(xls_file, trabl)
+        time.sleep(30)
+    except FileNotFoundError as trabl:
+        big_trabl(xls_file, trabl)
+        time.sleep(30)
+    except PermissionError as trabl:
+        big_trabl(xls_file, trabl)
+        time.sleep(30)
+
+
+    # print('Можно закрывать.')
+    # time.sleep(30)
+    # folder_for_new_xlsx = folder_for_find_xlsx + '\\' + exit_files_dir
+
+    # try:
+    #     sum_files(folder_for_new_xlsx, folder_for_find_xlsx)
+    # except KeyError as trabl:
+    #     xls_file = 'сам знаешь'
+    #     big_trabl(xls_file, trabl)
