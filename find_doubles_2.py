@@ -591,7 +591,7 @@ def sum_files(work_dir, exit_files_dir):
 
             # nn_sheet.cell(row=first_row-1, column=i).border = border_1
             # nn_sheet.cell(row=first_row-1, column=i).font = font_1
-
+    
     for row in range(1, sheet.max_row+1):
         for col in range(1, sheet.max_column+1):
             # print(sheet.cell(row=row, column=col).value)
@@ -608,42 +608,60 @@ def sum_files(work_dir, exit_files_dir):
 
 
 if __name__ == '__main__':
-    # полный путь к папке из которой выполняется файл
-    folder_for_find_xlsx = os.path.dirname(
-        os.path.abspath(inspect.stack()[0][1]))
-
-    # создаю папку "exit"
-    mypath = folder_for_find_xlsx+'\\exit'
-    if not os.path.isdir(mypath):
-        print('Нету папки "exit", создаю.')
-        os.makedirs(mypath)
-
-    # for xls_file in work_with_dir(folder_for_find_xlsx):
-    #     print(xls_file)
-        # work(xls_file, folder_for_find_xlsx, exit_files_dir)
-        
     try:
-        for xls_file in work_with_dir(folder_for_find_xlsx):
+        # полный путь к папке из которой выполняется файл
+        folder_for_find_xlsx = os.path.dirname(
+            os.path.abspath(inspect.stack()[0][1]))
+
+        # создаю папку "exit"
+        mypath = folder_for_find_xlsx+'\\exit'
+        if not os.path.isdir(mypath):
+            print('Нету папки "exit", создаю.')
+            os.makedirs(mypath)
+
+        # for xls_file in work_with_dir(folder_for_find_xlsx):
+        #     print(xls_file)
+            # work(xls_file, folder_for_find_xlsx, exit_files_dir)
             
-            print('Работаю с файлом: %s' % (xls_file))
-            work(xls_file, folder_for_find_xlsx, exit_files_dir)
-    except ValueError as trabl:
-        big_trabl(xls_file, trabl)
-        time.sleep(30)
-    except FileNotFoundError as trabl:
-        big_trabl(xls_file, trabl)
-        time.sleep(30)
-    except PermissionError as trabl:
-        big_trabl(xls_file, trabl)
-        time.sleep(30)
+        try:
+            for xls_file in work_with_dir(folder_for_find_xlsx):
+                
+                print('Работаю с файлом: %s' % (xls_file))
+                work(xls_file, folder_for_find_xlsx, exit_files_dir)
+        except ValueError as trabl:
+            big_trabl(xls_file, trabl)
+            time.sleep(30)
+        except FileNotFoundError as trabl:
+            big_trabl(xls_file, trabl)
+            time.sleep(30)
+        except PermissionError as trabl:
+            big_trabl(xls_file, trabl)
+            time.sleep(30)
 
 
-    print('Можно закрывать.')
-    time.sleep(30)
-    # folder_for_new_xlsx = folder_for_find_xlsx + '\\' + exit_files_dir
+        print('Можно закрывать.')
+        # time.sleep(30)
+        # folder_for_new_xlsx = folder_for_find_xlsx + '\\' + exit_files_dir
 
-    # try:
-    #     sum_files(folder_for_new_xlsx, folder_for_find_xlsx)
-    # except KeyError as trabl:
-    #     xls_file = 'сам знаешь'
-    #     big_trabl(xls_file, trabl)
+        # try:
+        #     sum_files(folder_for_new_xlsx, folder_for_find_xlsx)
+        # except KeyError as trabl:
+        #     xls_file = 'сам знаешь'
+        #     big_trabl(xls_file, trabl)
+        import logging
+        # logging.basicConfig(level = logging.DEBUG, filename = u'mylog.log')
+        logging.basicConfig(format = u'[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s', level = logging.DEBUG, filename = u'mylog.log')
+        # logging.basicConfig(format = u'%(levelname)-8s [%(asctime)s] %(message)s', level = logging.DEBUG, filename = u'mylog.log')
+        # Сообщение отладочное
+        logging.debug( u'This is a debug message' )
+        # Сообщение информационное
+        logging.info( u'This is an info message' )
+        # Сообщение предупреждение
+        logging.warning( u'This is a warning' )
+        # Сообщение ошибки
+        logging.error( u'This is an error message' )
+        # Сообщение критическое
+        logging.critical( u'FATAL!!!' )
+    except BaseException as error:
+        print('An exception occurred: {}'.format(error))
+        # time.sleep(30)
