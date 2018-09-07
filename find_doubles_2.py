@@ -15,7 +15,8 @@ import inspect
 
 fill_1 = PatternFill(fgColor='D9D9D9', fill_type='solid')
 fill_2 = PatternFill(fgColor='F7E2AE', fill_type='solid')
-# C:\work\KMZ_double_finder>pyinstaller find_doubles_2.py --onefile
+
+# pyinstaller find_doubles_2.py --onefile
 
 border_1 = Border(left=Side(border_style='thin', color='000000'),
                       right=Side(border_style='thin', color='000000'),

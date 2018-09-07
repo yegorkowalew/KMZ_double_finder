@@ -1,4 +1,11 @@
 *.xlsx
 templates/
 __pycache__/
+build/
+dist/
+exit/
+*.spec
 *.log
+*.exe
+*.zip
+*.rar
