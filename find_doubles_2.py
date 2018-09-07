@@ -1,3 +1,5 @@
+from modules.selflog.selflog import logger
+
 import openpyxl
 from copy import copy
 try:
@@ -5,23 +7,14 @@ try:
 except ImportError:
     from openpyxl.utils import get_column_letter
 
-from openpyxl.styles import Border, Side, Font, Alignment, PatternFill
+from modules.openpyxlstyles.styles import fill_1, fill_2, border_1, font_1, alignment_1
 
 from datetime import datetime
 import time
 import os
 import inspect
-# from modules.dirs.dir_work import user_input_work
-
-fill_1 = PatternFill(fgColor='D9D9D9', fill_type='solid')
-fill_2 = PatternFill(fgColor='F7E2AE', fill_type='solid')
 
 # pyinstaller find_doubles_2.py --onefile
-
-border_1 = Border(left=Side(border_style='thin', color='000000'),
-                      right=Side(border_style='thin', color='000000'),
-                      top=Side(border_style='thin', color='000000'),
-                      bottom=Side(border_style='thin', color='000000'))
 
 exit_files_dir = 'exit'
 first_row = 6
@@ -124,7 +117,6 @@ class Detail:
 
 
 def work_with_dir(folder_for_find_xlsx):
-    
     # folder_for_find_xlsx = os.path.dirname(os.path.abspath(inspect.stack()[0][1])) # полный путь к папке из которой выполняется файл
     list_files = []  # список файлов с полными путями
     for file in os.listdir(folder_for_find_xlsx):  # во всех файлах папки
@@ -132,7 +124,7 @@ def work_with_dir(folder_for_find_xlsx):
             # добавляем файл, с полным путем, подходящий шаблону, в список
             list_files.append(os.path.join(file))
     if list_files == []:
-        print('Нету файлов с которыми работать')
+        logger.critical('Нету файлов для обработки')
         time.sleep(30)
         exit(0)
     return list_files
@@ -142,11 +134,9 @@ def file_to_wb(file_name):
     try:
         return openpyxl.load_workbook(filename=file_name)
     except:
-        print('Ошибка открытия файла: %s' % (file_name))
+        logger.critical('Ошибка открытия файла: %s' % (file_name))
         exit(0)
     
-
-
 def work(work_filename, work_dir, exit_files_dir):
     new_sheet_list = []
     start_time = time.process_time()  # Засекаем время
@@ -175,15 +165,15 @@ def work(work_filename, work_dir, exit_files_dir):
         if sheet.cell(row=row, column=end_names.get('name')[0]).value:
             second_row = row+1
 
-    print('Последняя обрабатываемая строка в таблице: '+str(second_row))
+    logger.info('Последняя обрабатываемая строка в таблице:  %s' % (str(second_row)))
 
-    end_coll = 0
+    # end_coll = 0
     for col in range(1, sheet.max_column):  # нашел последний столбец в таблице
         end_coll = col
 
     for row in range(first_row, second_row):
         if sheet.cell(row=row, column=1).value == "Уз.":
-            print('Нашел узел: '+str(sheet.cell(row=row, column=3).value))
+            logger.info('Нашел узел: %s' % (str(sheet.cell(row=row, column=3).value)))
             unit_row = row
             npp = 0
             unit = Unit(
@@ -249,24 +239,6 @@ def work(work_filename, work_dir, exit_files_dir):
                 new_value[0] = m_colum
                 after_end_names.update({key: new_value})
                 m_colum += 1
-
-
-
-    
-
-    font_1 = Font(name='Calibri',
-                  size=11,
-                  bold=True,
-                  italic=False,
-                  vertAlign=None,
-                  underline='none',
-                  strike=False,
-                  color='FF000000')
-    alignment_1 = Alignment(text_rotation=180,
-                            wrap_text=False,
-                            shrink_to_fit=False,
-                            indent=0
-                            )
 
     for nn_sheet in new_sheet_list:
         for key, val in after_end_names.items():
@@ -403,18 +375,16 @@ def work(work_filename, work_dir, exit_files_dir):
         exit_files_dir + '\\' + ' - '.join(new_file_name)+".xlsx"
 
     work_wb.save(new_file_name_path)
-    print('Сохраняю')
-    print("Сохранил файл с новым именем: %s. \nЗа %s секунд. Время: %s"
+    logger.info("Записал файл: %s. Обработал за: %s секунд."
           % (
               new_file_name_path,
               round(time.process_time() - start_time, 3),
-              datetime.strftime(datetime.now(), "%H:%M:%S"),
           )
           )
 
 
 def big_trabl(xls_file, trabl):
-    print('Что-то пошло не так при первичной обработке файла: %s. \nПитончег говорит: %s' %
+    logger.critical('Что-то пошло не так при первичной обработке файла: %s. \nПитончег говорит: %s' %
           (xls_file, trabl))
     time.sleep(60)
     exit(0)
@@ -430,7 +400,7 @@ def sum_files(work_dir, exit_files_dir):
     i = 0
     exit_mass = []
     for need_file in work_with_dir(work_dir):
-        print('Работаю с файлом: ' + work_dir + '\\' + need_file)
+        logger.info('Работаю с файлом: ' + work_dir + '\\' + need_file)
         work_wb = file_to_wb(work_dir + '\\' + need_file)
         sheet = work_wb[double_sheet_name]
         for row in sheet.iter_rows():
@@ -439,19 +409,15 @@ def sum_files(work_dir, exit_files_dir):
             for z in row:
                 o.append(z.value)
             if o[2] == "Служебная №:" or o[2] == "Заказчик:" or o[2] == "Заказ №:" or o[2] == "Отгрузка:":
-                print('Откидываю строку потому что: '+o[2])
+                logger.info('Откидываю строку потому что: '+o[2])
+
             elif o[2] == "Наименование":
                 for i in o[num_do_summ:len(o)-num_posle_summ]:
                     header1.append(str(i))
 
             else:
                 exit_mass.append(o)
-                # for i in range(num_do_summ, len(o)-num_posle_summ):
-                # if o[i] != None:
-                # print(o[i])
-                # print(o[0])
-                # hed1[i] = o[0]
-                # print(hed1)
+
     header = ['Наименование', 'Позиция',
               'Кол-во узел (шт.)', 'Кол-во изделие (шт.)', 'Кол-во заказ (шт.)', 'Кол-во НЗП (шт.)', 'Массив']
     header2 = ['Размеры чист.', 'Размеры заготовки', 'Операции', 'Розцеховка']
@@ -515,13 +481,11 @@ def sum_files(work_dir, exit_files_dir):
         new_sheet.append(row)
     for row in exit_mass2:
         new_sheet.append(row)
-
     
     try:
         wb.save(exit_files_dir + '\\file.xlsx')
     except PermissionError as identifier:
-        print('Не получилось сохранить файл: %s' % (exit_files_dir + '\\file.xlsx'))
-        print('Скорей всего он открыт в редакторе')
+        logger.critical('Нет доступа к файлу: %s, %s' % (exit_files_dir + '\\file.xlsx', identifier))
         exit(0)
 
     work_wb = file_to_wb(exit_files_dir +'\\file.xlsx')
@@ -550,26 +514,26 @@ def sum_files(work_dir, exit_files_dir):
                     ss += int(row2[4])
                     # сравниваем столбцы дублирующихся строк и выводим несовпадающие:
                     if row2[0] != exit_row[0]:
-                        print('У %s %s не совпадает Наименование: "%s" и "%s"' %(row2[0], row2[1], row2[0], exit_row[0]))
+                        logger.warning('У %s %s не совпадает Наименование: "%s" и "%s"' %(row2[0], row2[1], row2[0], exit_row[0]))
                         exit_row[0] = '|'.join([str(row2[0]), str(exit_row[0]), 'W'])
 
                     if row2[19] != exit_row[19]:
-                        print('У %s %s не совпадает Розцеховка: "%s" и "%s"' %(row2[0], row2[1], row2[19], exit_row[19]))
+                        logger.warning('У %s %s не совпадает Розцеховка: "%s" и "%s"' %(row2[0], row2[1], row2[19], exit_row[19]))
                         exit_row[19] = '|'.join([str(row2[19]), str(exit_row[19]), 'W'])
 
                     if row2[18] != exit_row[18]:
-                        print('У %s %s не совпадают Операции: "%s" и "%s"' %(row2[0], row2[1], row2[18], exit_row[18]))
+                        logger.warning('У %s %s не совпадают Операции: "%s" и "%s"' %(row2[0], row2[1], row2[18], exit_row[18]))
                         if row2[18] != None:
                             print('v')
                             exit_row[18] = '|'.join([str((row2[18])), str(exit_row[18]), 'W'])
                         # print(exit_row)
 
                     if row2[17] != exit_row[17]:
-                        print('У %s %s не совпадают Размеры заготовки: "%s" и "%s"' %(row2[0], row2[1], row2[17], exit_row[17]))
+                        logger.warning('У %s %s не совпадают Размеры заготовки: "%s" и "%s"' %(row2[0], row2[1], row2[17], exit_row[17]))
                         exit_row[17] = '|'.join([str(row2[17]), str(exit_row[17]), 'W'])
 
                     if row2[16] != exit_row[16]:
-                        print('У %s %s не совпадают Размеры чист.: "%s" и "%s"' %(row2[0], row2[1], row2[16], exit_row[16]))
+                        logger.warning('У %s %s не совпадают Размеры чист.: "%s" и "%s"' %(row2[0], row2[1], row2[16], exit_row[16]))
                         exit_row[16] = '|'.join([str(row2[16]), str(exit_row[16]), 'W'])
 
                     for rr in range(0, len(row2)):
@@ -583,8 +547,7 @@ def sum_files(work_dir, exit_files_dir):
     try:
         work_wb.save(exit_files_dir + '\\file.xlsx')
     except PermissionError as identifier:
-        print('Не получилось сохранить файл: %s' % (exit_files_dir + '\\file.xlsx'))
-        print('Скорей всего он открыт в редакторе')
+        logger.critical('Нет доступа к файлу: %s' % (exit_files_dir + '\\file.xlsx'))
         exit(0)
 
     work_wb = file_to_wb(exit_files_dir +'\\file.xlsx')
@@ -603,10 +566,8 @@ def sum_files(work_dir, exit_files_dir):
     try:
         work_wb.save(exit_files_dir + '\\file.xlsx')
     except PermissionError as identifier:
-        print('Не получилось сохранить файл: %s' % (exit_files_dir + '\\file.xlsx'))
-        print('Скорей всего он открыт в редакторе')
+        logger.critical('Не получилось сохранить файл: %s' % (exit_files_dir + '\\file.xlsx'))
         exit(0)
-
 
 if __name__ == '__main__':
     try:
@@ -617,30 +578,30 @@ if __name__ == '__main__':
         # создаю папку "exit"
         mypath = folder_for_find_xlsx+'\\exit'
         if not os.path.isdir(mypath):
-            print('Нету папки "exit", создаю.')
+            logger.warning('Создаю папку "exit"')
             os.makedirs(mypath)
 
-        # for xls_file in work_with_dir(folder_for_find_xlsx):
-        #     print(xls_file)
-            # work(xls_file, folder_for_find_xlsx, exit_files_dir)
+        for xls_file in work_with_dir(folder_for_find_xlsx):
+            # print(xls_file)
+            work(xls_file, folder_for_find_xlsx, exit_files_dir)
             
-        try:
-            for xls_file in work_with_dir(folder_for_find_xlsx):
+        # try:
+        #     for xls_file in work_with_dir(folder_for_find_xlsx):
                 
-                print('Работаю с файлом: %s' % (xls_file))
-                work(xls_file, folder_for_find_xlsx, exit_files_dir)
-        except ValueError as trabl:
-            big_trabl(xls_file, trabl)
-            time.sleep(30)
-        except FileNotFoundError as trabl:
-            big_trabl(xls_file, trabl)
-            time.sleep(30)
-        except PermissionError as trabl:
-            big_trabl(xls_file, trabl)
-            time.sleep(30)
+        #         print('Работаю с файлом: %s' % (xls_file))
+        #         work(xls_file, folder_for_find_xlsx, exit_files_dir)
+        # except ValueError as trabl:
+        #     big_trabl(xls_file, trabl)
+        #     time.sleep(30)
+        # except FileNotFoundError as trabl:
+        #     big_trabl(xls_file, trabl)
+        #     time.sleep(30)
+        # except PermissionError as trabl:
+        #     big_trabl(xls_file, trabl)
+        #     time.sleep(30)
 
 
-        print('Можно закрывать.')
+        # print('Можно закрывать.')
         # time.sleep(30)
         # folder_for_new_xlsx = folder_for_find_xlsx + '\\' + exit_files_dir
 
@@ -649,20 +610,7 @@ if __name__ == '__main__':
         # except KeyError as trabl:
         #     xls_file = 'сам знаешь'
         #     big_trabl(xls_file, trabl)
-        import logging
-        # logging.basicConfig(level = logging.DEBUG, filename = u'mylog.log')
-        logging.basicConfig(format = u'[LINE:%(lineno)d]# %(levelname)-8s [%(asctime)s]  %(message)s', level = logging.DEBUG, filename = u'mylog.log')
-        # logging.basicConfig(format = u'%(levelname)-8s [%(asctime)s] %(message)s', level = logging.DEBUG, filename = u'mylog.log')
-        # Сообщение отладочное
-        logging.debug( u'This is a debug message' )
-        # Сообщение информационное
-        logging.info( u'This is an info message' )
-        # Сообщение предупреждение
-        logging.warning( u'This is a warning' )
-        # Сообщение ошибки
-        logging.error( u'This is an error message' )
-        # Сообщение критическое
-        logging.critical( u'FATAL!!!' )
+
     except BaseException as error:
         print('An exception occurred: {}'.format(error))
         # time.sleep(30)
