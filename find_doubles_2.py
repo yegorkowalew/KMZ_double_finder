@@ -16,7 +16,8 @@ import inspect
 
 # pyinstaller find_doubles_2.py --onefile
 
-exit_files_dir = 'exit'
+exit_sum_file = 'Итоговый файл.xlsx'
+exit_files_dir = 'Просумированные'
 first_row = 6
 end_coll = 0
 second_row = 0
@@ -113,6 +114,11 @@ def work_with_dir(folder_for_find_xlsx):
         logger.critical('Нету файлов для обработки')
         time.sleep(30)
         exit(0)
+    else:
+        
+        if exit_sum_file in list_files:
+            list_files.remove(exit_sum_file)
+            logger.warning('Файл "%s" уже есть в папке, буду перезаписывать' % (exit_sum_file))
     return list_files
 
 
@@ -469,12 +475,12 @@ def sum_files(work_dir, exit_files_dir):
         new_sheet.append(row)
     
     try:
-        wb.save(exit_files_dir + '\\file.xlsx')
+        wb.save(exit_files_dir + '\\' + exit_sum_file)
     except PermissionError as identifier:
-        logger.critical('Нет доступа к файлу: %s, %s' % (exit_files_dir + '\\file.xlsx', identifier))
+        logger.critical('Нет доступа к файлу: %s, %s' % (exit_files_dir + '\\' + exit_sum_file, identifier))
         exit(0)
 
-    work_wb = file_to_wb(exit_files_dir +'\\file.xlsx')
+    work_wb = file_to_wb(exit_files_dir +'\\' + exit_sum_file)
     sheet = work_wb['Sheet']
     sum_mass = []
     def recell(itm):
@@ -530,12 +536,12 @@ def sum_files(work_dir, exit_files_dir):
             double_sheet.append(exit_row)
 
     try:
-        work_wb.save(exit_files_dir + '\\file.xlsx')
+        work_wb.save(exit_files_dir + '\\' + exit_sum_file)
     except PermissionError as identifier:
-        logger.critical('Нет доступа к файлу: %s' % (exit_files_dir + '\\file.xlsx'))
+        logger.critical('Нет доступа к файлу: %s' % (exit_files_dir + '\\' + exit_sum_file))
         exit(0)
 
-    work_wb = file_to_wb(exit_files_dir +'\\file.xlsx')
+    work_wb = file_to_wb(exit_files_dir +'\\' + exit_sum_file)
     sheet = work_wb['Итог']
 
 
@@ -571,9 +577,9 @@ def sum_files(work_dir, exit_files_dir):
             sheet.cell(row=1, column=col).alignment = alignment_1
 
     try:
-        work_wb.save(exit_files_dir + '\\file.xlsx')
+        work_wb.save(exit_files_dir + '\\' + exit_sum_file)
     except PermissionError as identifier:
-        logger.critical('Не получилось сохранить файл: %s' % (exit_files_dir + '\\file.xlsx'))
+        logger.critical('Не получилось сохранить файл: %s' % (exit_files_dir + '\\' + exit_sum_file))
         exit(0)
 
 if __name__ == '__main__':
@@ -583,18 +589,18 @@ if __name__ == '__main__':
         os.path.abspath(inspect.stack()[0][1]))
 
     # создаю папку "exit"
-    mypath = folder_for_find_xlsx+'\\exit'
+    mypath = folder_for_find_xlsx+'\\'+exit_files_dir
     if not os.path.isdir(mypath):
-        logger.warning('Создаю папку "exit"')
+        logger.warning('Создаю папку "%s"'% (exit_files_dir))
         os.makedirs(mypath)
 
     # for xls_file in work_with_dir(folder_for_find_xlsx):
     #     print(xls_file)
     #     work(xls_file, folder_for_find_xlsx, exit_files_dir)
-        
+
     try:
         for xls_file in work_with_dir(folder_for_find_xlsx):
-            print('Работаю с файлом: %s' % (xls_file))
+            logger.info('Работаю с файлом: %s' % (xls_file))
             work(xls_file, folder_for_find_xlsx, exit_files_dir)
     except ValueError as trabl:
         big_trabl(xls_file, trabl)
