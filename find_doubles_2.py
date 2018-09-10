@@ -1,4 +1,5 @@
 from modules.selflog.selflog import logger
+from openpyxl.comments import Comment
 
 import openpyxl
 from copy import copy
@@ -29,7 +30,7 @@ second_row = 0
 after_column = 8
 double_sheet_name = "Сортировка по узлам"
 shop_list = []
-# new_sheet_list = []
+
 end_names_original = {
     'npp': [1, "№ п/п", 3.7, ],
     'types': [2, "Наименование", "21", ],
@@ -54,7 +55,6 @@ def if_num(cell):
     except:
         return False
 
-
 class Unit:
     def __init__(self, types, name, knot, product, order, nzp, massiv, size_clean, size_workpiece, operations, shop, row):
         """Constructor for Unit"""
@@ -73,7 +73,6 @@ class Unit:
         self.operations = operations
         self.shop = shop  # Столбец: "Розцеховка" (указывать не обязательно)
         self.row = row  # поле для хранения номера строки
-
 
 class Detail:
     def __init__(self, npp, types, name, knot, product, order, nzp, massiv, size_clean, size_workpiece, operations, shop, doubles, row, unit_row):
@@ -107,7 +106,6 @@ class Detail:
         self.row = row  # поле для хранения номера строки
         self.unit_row = unit_row  # Указываем строку родительского узла
 
-
 def work_with_dir(folder_for_find_xlsx):
     # folder_for_find_xlsx = os.path.dirname(os.path.abspath(inspect.stack()[0][1])) # полный путь к папке из которой выполняется файл
     list_files = []  # список файлов с полными путями
@@ -132,7 +130,6 @@ def work_with_dir(folder_for_find_xlsx):
             list_files.remove(for_del_file)
     return list_files
 
-
 def file_to_wb(file_name):
     try:
         return openpyxl.load_workbook(filename=file_name)
@@ -140,7 +137,7 @@ def file_to_wb(file_name):
         logger.critical('Ошибка открытия файла: %s' % (file_name))
         # time.sleep(30)
         exit(0)
-    
+
 def work(work_filename, work_dir, exit_files_dir):
     new_sheet_list = []
     start_time = time.process_time()  # Засекаем время
@@ -249,7 +246,7 @@ def work(work_filename, work_dir, exit_files_dir):
             nn_sheet.cell(row=first_row-1, column=val[0]).value = val[1]
             nn_sheet.column_dimensions[get_column_letter(
                 val[0])].width = float(val[2])
-            nn_sheet.row_dimensions[first_row-1].height = 120
+            nn_sheet.row_dimensions[first_row-1].height = 130
 
     added_rows = []
     zz = first_row
@@ -388,7 +385,7 @@ def work(work_filename, work_dir, exit_files_dir):
             )
     except OSError as identifier:
         big_trabl(new_file_name_path, identifier)
-    
+
 def sum_files(work_dir, exit_files_dir):
     num_do_summ = 9
     num_posle_summ = 4
@@ -480,7 +477,36 @@ def sum_files(work_dir, exit_files_dir):
         new_sheet.append(row)
     for row in exit_mass2:
         new_sheet.append(row)
-    
+
+    # Расскрашиваем суммировочную таблицу
+    logger.info('Расскрашиваем лист: %s' % ('Sheet'))
+    for row in range(1, new_sheet.max_row+1):
+        for col in range(1, new_sheet.max_column+1):
+            new_sheet.cell(row=row, column=col).border = border_1
+
+    for col in range(1, new_sheet.max_column+1):
+        new_sheet.cell(row=1, column=col).fill = fill_1
+        new_sheet.cell(row=1, column=col).font = font_1
+        new_sheet.cell(row=2, column=col).fill = fill_1
+        new_sheet.cell(row=2, column=col).font = font_1
+        if col in [3, 4, 5, 6, 7]:
+            new_sheet.cell(row=2, column=col).alignment = alignment_1
+            new_sheet.column_dimensions[get_column_letter(col)].width = float(5)
+        if col == 1:
+            new_sheet.column_dimensions[get_column_letter(col)].width = float(20)
+        if col == 2:
+            new_sheet.column_dimensions[get_column_letter(col)].width = float(25)
+        if col in [new_sheet.max_column, new_sheet.max_column-1, new_sheet.max_column-2, new_sheet.max_column-3]:
+            new_sheet.column_dimensions[get_column_letter(col)].width = float(25)
+        if col in list(range(8, new_sheet.max_column+1-4)):
+            new_sheet.cell(row=1, column=col).comment = Comment(new_sheet.cell(row=1, column=col).value, "Find Doubles")
+            new_sheet.cell(row=2, column=col).comment = Comment(new_sheet.cell(row=2, column=col).value, "Find Doubles")
+            new_sheet.cell(row=2, column=col).alignment = alignment_1
+            new_sheet.column_dimensions[get_column_letter(col)].width = float(5)
+            new_sheet.cell(row=1, column=col).alignment = alignment_1
+        new_sheet.row_dimensions[1].height = 60
+        new_sheet.row_dimensions[2].height = 130
+
     try:
         wb.save(exit_files_dir + '\\' + exit_sum_file)
     except PermissionError as identifier:
@@ -553,6 +579,7 @@ def sum_files(work_dir, exit_files_dir):
 
 
     # Расскраска выходной таблицы
+    logger.info('Расскрашиваем лист: %s' % ('Итог'))
     for row in range(1, sheet.max_row+1):
         for col in range(1, sheet.max_column+1):
             if col == 5:
@@ -568,7 +595,9 @@ def sum_files(work_dir, exit_files_dir):
 
     for col in range(1, sheet.max_column+1):
         sheet.cell(row=1, column=col).fill = fill_1
+        sheet.cell(row=1, column=col).font = font_1
         sheet.cell(row=2, column=col).fill = fill_1
+        sheet.cell(row=2, column=col).font = font_1
         if col in [3, 4, 5, 6, 7]:
             sheet.cell(row=2, column=col).alignment = alignment_1
             sheet.column_dimensions[get_column_letter(col)].width = float(5)
@@ -579,9 +608,13 @@ def sum_files(work_dir, exit_files_dir):
         if col in [sheet.max_column, sheet.max_column-1, sheet.max_column-2, sheet.max_column-3]:
             sheet.column_dimensions[get_column_letter(col)].width = float(25)
         if col in list(range(8, sheet.max_column+1-4)):
+            sheet.cell(row=1, column=col).comment = Comment(sheet.cell(row=1, column=col).value, "Find Doubles")
+            sheet.cell(row=2, column=col).comment = Comment(sheet.cell(row=2, column=col).value, "Find Doubles")
             sheet.cell(row=2, column=col).alignment = alignment_1
             sheet.column_dimensions[get_column_letter(col)].width = float(5)
             sheet.cell(row=1, column=col).alignment = alignment_1
+        sheet.row_dimensions[1].height = 60
+        sheet.row_dimensions[2].height = 130
 
     try:
         work_wb.save(exit_files_dir + '\\' + exit_sum_file)
