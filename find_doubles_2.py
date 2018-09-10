@@ -39,20 +39,6 @@ end_names_original = {
     'shop': [12, "Розцеховка", "12", ],
 }
 end_names = end_names_original
-# end_names = {
-#         'npp': [1, "№ п/п", 3.7,],
-#         'types': [2, "Наименование", "21",],
-#         'name': [3, "Позиция", "36",],
-#         'knot': [4, "Кол-во узел (шт.)", 3.7,],
-#         'product': [5, "Кол-во изделие (шт.)", 3.7,],
-#         'order': [6, "Кол-во заказ (шт.)", 3.7,],
-#         'nzp': [7, "Кол-во НЗП (шт.)", 3.7,],
-#         'massiv': [8, "Массив", 3.7,],
-#         'size_clean': [9, "Размеры чист.", "26",],
-#         'size_workpiece': [10, "Размеры заготовки", "26",],
-#         'operations': [11, "Операции", "26",],
-#         'shop': [12, "Розцеховка", "12",],
-#         }
 
 
 def if_num(cell):
@@ -516,25 +502,24 @@ def sum_files(work_dir, exit_files_dir):
                     if row2[0] != exit_row[0]:
                         logger.warning('У %s %s не совпадает Наименование: "%s" и "%s"' %(row2[0], row2[1], row2[0], exit_row[0]))
                         exit_row[0] = '|'.join([str(row2[0]), str(exit_row[0]), 'W'])
+                    # logger.debug(exit_row[-1])
+                    if row2[-1] != exit_row[-1]:
+                        logger.warning('У %s %s не совпадает Розцеховка: "%s" и "%s"' %(row2[0], row2[1], row2[-1], exit_row[-1]))
+                        exit_row[-1] = '|'.join([str(row2[-1]), str(exit_row[-1]), 'W'])
 
-                    if row2[19] != exit_row[19]:
-                        logger.warning('У %s %s не совпадает Розцеховка: "%s" и "%s"' %(row2[0], row2[1], row2[19], exit_row[19]))
-                        exit_row[19] = '|'.join([str(row2[19]), str(exit_row[19]), 'W'])
-
-                    if row2[18] != exit_row[18]:
-                        logger.warning('У %s %s не совпадают Операции: "%s" и "%s"' %(row2[0], row2[1], row2[18], exit_row[18]))
-                        if row2[18] != None:
-                            print('v')
-                            exit_row[18] = '|'.join([str((row2[18])), str(exit_row[18]), 'W'])
+                    if row2[-2] != exit_row[-2]:
+                        logger.warning('У %s %s не совпадают Операции: "%s" и "%s"' %(row2[0], row2[1], row2[-2], exit_row[-2]))
+                        if row2[-2] != None:
+                            exit_row[-2] = '|'.join([str((row2[-2])), str(exit_row[-2]), 'W'])
                         # print(exit_row)
 
-                    if row2[17] != exit_row[17]:
-                        logger.warning('У %s %s не совпадают Размеры заготовки: "%s" и "%s"' %(row2[0], row2[1], row2[17], exit_row[17]))
-                        exit_row[17] = '|'.join([str(row2[17]), str(exit_row[17]), 'W'])
+                    if row2[-3] != exit_row[-3]:
+                        logger.warning('У %s %s не совпадают Размеры заготовки: "%s" и "%s"' %(row2[0], row2[1], row2[-3], exit_row[-3]))
+                        exit_row[-3] = '|'.join([str(row2[-3]), str(exit_row[-3]), 'W'])
 
-                    if row2[16] != exit_row[16]:
-                        logger.warning('У %s %s не совпадают Размеры чист.: "%s" и "%s"' %(row2[0], row2[1], row2[16], exit_row[16]))
-                        exit_row[16] = '|'.join([str(row2[16]), str(exit_row[16]), 'W'])
+                    if row2[-4] != exit_row[-4]:
+                        logger.warning('У %s %s не совпадают Размеры чист.: "%s" и "%s"' %(row2[0], row2[1], row2[-4], exit_row[-4]))
+                        exit_row[-4] = '|'.join([str(row2[-4]), str(exit_row[-4]), 'W'])
 
                     for rr in range(0, len(row2)):
                         if row2[rr] != None and exit_row[rr] == None:
@@ -553,15 +538,37 @@ def sum_files(work_dir, exit_files_dir):
     work_wb = file_to_wb(exit_files_dir +'\\file.xlsx')
     sheet = work_wb['Итог']
 
-            # nn_sheet.cell(row=first_row-1, column=i).border = border_1
-            # nn_sheet.cell(row=first_row-1, column=i).font = font_1
-    
+
+    # Расскраска выходной таблицы
     for row in range(1, sheet.max_row+1):
         for col in range(1, sheet.max_column+1):
-            # print(sheet.cell(row=row, column=col).value)
+            if col == 5:
+                sheet.cell(row=row, column=col).fill = fill_1
+            try:
+                split_cell = sheet.cell(row=row, column=col).value.split('|')
+                if len(split_cell) > 1:
+                    sheet.cell(row=row, column=col).value = '|'.join(split_cell[:-1])
+                    sheet.cell(row=row, column=col).fill = fill_2
+            except:
+                pass
             sheet.cell(row=row, column=col).border = border_1
 
-            # sheet.cell(row=row, column=col).fill = fill_2
+    for col in range(1, sheet.max_column+1):
+        sheet.cell(row=1, column=col).fill = fill_1
+        sheet.cell(row=2, column=col).fill = fill_1
+        if col in [3, 4, 5, 6, 7]:
+            sheet.cell(row=2, column=col).alignment = alignment_1
+            sheet.column_dimensions[get_column_letter(col)].width = float(5)
+        if col == 1:
+            sheet.column_dimensions[get_column_letter(col)].width = float(20)
+        if col == 2:
+            sheet.column_dimensions[get_column_letter(col)].width = float(25)
+        if col in [sheet.max_column, sheet.max_column-1, sheet.max_column-2, sheet.max_column-3]:
+            sheet.column_dimensions[get_column_letter(col)].width = float(25)
+        if col in list(range(8, sheet.max_column+1-4)):
+            sheet.cell(row=2, column=col).alignment = alignment_1
+            sheet.column_dimensions[get_column_letter(col)].width = float(5)
+            sheet.cell(row=1, column=col).alignment = alignment_1
 
     try:
         work_wb.save(exit_files_dir + '\\file.xlsx')
@@ -570,47 +577,46 @@ def sum_files(work_dir, exit_files_dir):
         exit(0)
 
 if __name__ == '__main__':
+    # try:
+    # полный путь к папке из которой выполняется файл
+    folder_for_find_xlsx = os.path.dirname(
+        os.path.abspath(inspect.stack()[0][1]))
+
+    # создаю папку "exit"
+    mypath = folder_for_find_xlsx+'\\exit'
+    if not os.path.isdir(mypath):
+        logger.warning('Создаю папку "exit"')
+        os.makedirs(mypath)
+
+    # for xls_file in work_with_dir(folder_for_find_xlsx):
+    #     print(xls_file)
+    #     work(xls_file, folder_for_find_xlsx, exit_files_dir)
+        
     try:
-        # полный путь к папке из которой выполняется файл
-        folder_for_find_xlsx = os.path.dirname(
-            os.path.abspath(inspect.stack()[0][1]))
-
-        # создаю папку "exit"
-        mypath = folder_for_find_xlsx+'\\exit'
-        if not os.path.isdir(mypath):
-            logger.warning('Создаю папку "exit"')
-            os.makedirs(mypath)
-
         for xls_file in work_with_dir(folder_for_find_xlsx):
-            # print(xls_file)
+            print('Работаю с файлом: %s' % (xls_file))
             work(xls_file, folder_for_find_xlsx, exit_files_dir)
-            
-        # try:
-        #     for xls_file in work_with_dir(folder_for_find_xlsx):
-                
-        #         print('Работаю с файлом: %s' % (xls_file))
-        #         work(xls_file, folder_for_find_xlsx, exit_files_dir)
-        # except ValueError as trabl:
-        #     big_trabl(xls_file, trabl)
-        #     time.sleep(30)
-        # except FileNotFoundError as trabl:
-        #     big_trabl(xls_file, trabl)
-        #     time.sleep(30)
-        # except PermissionError as trabl:
-        #     big_trabl(xls_file, trabl)
-        #     time.sleep(30)
+    except ValueError as trabl:
+        big_trabl(xls_file, trabl)
+        time.sleep(30)
+    except FileNotFoundError as trabl:
+        big_trabl(xls_file, trabl)
+        time.sleep(30)
+    except PermissionError as trabl:
+        big_trabl(xls_file, trabl)
+        time.sleep(30)
 
 
-        # print('Можно закрывать.')
-        # time.sleep(30)
-        # folder_for_new_xlsx = folder_for_find_xlsx + '\\' + exit_files_dir
+    # print('Можно закрывать.')
+    # time.sleep(30)
+    folder_for_new_xlsx = folder_for_find_xlsx + '\\' + exit_files_dir
 
-        # try:
-        #     sum_files(folder_for_new_xlsx, folder_for_find_xlsx)
-        # except KeyError as trabl:
-        #     xls_file = 'сам знаешь'
-        #     big_trabl(xls_file, trabl)
+    try:
+        sum_files(folder_for_new_xlsx, folder_for_find_xlsx)
+    except KeyError as trabl:
+        xls_file = 'сам знаешь'
+        big_trabl(xls_file, trabl)
 
-    except BaseException as error:
-        print('An exception occurred: {}'.format(error))
+    # except BaseException as error:
+    #     print(error)
         # time.sleep(30)
