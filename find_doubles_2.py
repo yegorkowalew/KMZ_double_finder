@@ -15,6 +15,11 @@ import os
 import inspect
 
 # pyinstaller find_doubles_2.py --onefile
+def big_trabl(xls_file, trabl):
+    logger.critical('Что-то пошло не так при первичной обработке файла: %s. \nПитончег говорит: %s' %
+          (xls_file, trabl))
+    time.sleep(60)
+    exit(0)
 
 exit_sum_file = 'Итоговый файл.xlsx'
 exit_files_dir = 'Просумированные'
@@ -115,10 +120,16 @@ def work_with_dir(folder_for_find_xlsx):
         time.sleep(30)
         exit(0)
     else:
-        
         if exit_sum_file in list_files:
             list_files.remove(exit_sum_file)
             logger.warning('Файл "%s" уже есть в папке, буду перезаписывать' % (exit_sum_file))
+        for_del = []
+        for list_file in list_files:
+            if list_file[0] == '~':
+                logger.warning('С файлом "%s" работать не буду' % (list_file))
+                for_del.append(list_file)
+        for for_del_file in for_del:
+            list_files.remove(for_del_file)
     return list_files
 
 
@@ -127,6 +138,7 @@ def file_to_wb(file_name):
         return openpyxl.load_workbook(filename=file_name)
     except:
         logger.critical('Ошибка открытия файла: %s' % (file_name))
+        # time.sleep(30)
         exit(0)
     
 def work(work_filename, work_dir, exit_files_dir):
@@ -366,22 +378,17 @@ def work(work_filename, work_dir, exit_files_dir):
     new_file_name_path = folder_for_find_xlsx + "\\" + \
         exit_files_dir + '\\' + ' - '.join(new_file_name)+".xlsx"
 
-    work_wb.save(new_file_name_path)
-    logger.info("Записал файл: %s. Обработал за: %s секунд."
-          % (
-              new_file_name_path,
-              round(time.process_time() - start_time, 3),
-          )
-          )
-
-
-def big_trabl(xls_file, trabl):
-    logger.critical('Что-то пошло не так при первичной обработке файла: %s. \nПитончег говорит: %s' %
-          (xls_file, trabl))
-    time.sleep(60)
-    exit(0)
-
-
+    try:
+        work_wb.save(new_file_name_path)
+        logger.info("Записал файл: %s. Обработал за: %s секунд."
+            % (
+                new_file_name_path,
+                round(time.process_time() - start_time, 3),
+            )
+            )
+    except OSError as identifier:
+        big_trabl(new_file_name_path, identifier)
+    
 def sum_files(work_dir, exit_files_dir):
     num_do_summ = 9
     num_posle_summ = 4
@@ -583,46 +590,47 @@ def sum_files(work_dir, exit_files_dir):
         exit(0)
 
 if __name__ == '__main__':
-    # try:
-    # полный путь к папке из которой выполняется файл
-    folder_for_find_xlsx = os.path.dirname(
-        os.path.abspath(inspect.stack()[0][1]))
-
-    # создаю папку "exit"
-    mypath = folder_for_find_xlsx+'\\'+exit_files_dir
-    if not os.path.isdir(mypath):
-        logger.warning('Создаю папку "%s"'% (exit_files_dir))
-        os.makedirs(mypath)
-
-    # for xls_file in work_with_dir(folder_for_find_xlsx):
-    #     print(xls_file)
-    #     work(xls_file, folder_for_find_xlsx, exit_files_dir)
-
+    logger.info('Начинаю работу')
     try:
-        for xls_file in work_with_dir(folder_for_find_xlsx):
-            logger.info('Работаю с файлом: %s' % (xls_file))
-            work(xls_file, folder_for_find_xlsx, exit_files_dir)
-    except ValueError as trabl:
-        big_trabl(xls_file, trabl)
+        # полный путь к папке из которой выполняется файл
+        folder_for_find_xlsx = os.path.dirname(
+            os.path.abspath(inspect.stack()[0][1]))
+
+        # создаю папку "exit"
+        mypath = folder_for_find_xlsx+'\\'+exit_files_dir
+        if not os.path.isdir(mypath):
+            logger.warning('Создаю папку "%s"'% (exit_files_dir))
+            os.makedirs(mypath)
+
+        # for xls_file in work_with_dir(folder_for_find_xlsx):
+        #     print(xls_file)
+        #     work(xls_file, folder_for_find_xlsx, exit_files_dir)
+
+        try:
+            for xls_file in work_with_dir(folder_for_find_xlsx):
+                logger.info('Работаю с файлом: %s' % (xls_file))
+                work(xls_file, folder_for_find_xlsx, exit_files_dir)
+        except ValueError as trabl:
+            big_trabl(xls_file, trabl)
+            time.sleep(30)
+        except FileNotFoundError as trabl:
+            big_trabl(xls_file, trabl)
+            time.sleep(30)
+        except PermissionError as trabl:
+            big_trabl(xls_file, trabl)
+            time.sleep(30)
+
+        folder_for_new_xlsx = folder_for_find_xlsx + '\\' + exit_files_dir
+
+        try:
+            sum_files(folder_for_new_xlsx, folder_for_find_xlsx)
+        except KeyError as trabl:
+            xls_file = 'сам знаешь'
+            big_trabl(xls_file, trabl)
+
+        print('Можно закрывать.')
         time.sleep(30)
-    except FileNotFoundError as trabl:
-        big_trabl(xls_file, trabl)
+
+    except BaseException as error:
+        logger.critical('Ошибка: %s' % (error))
         time.sleep(30)
-    except PermissionError as trabl:
-        big_trabl(xls_file, trabl)
-        time.sleep(30)
-
-
-    # print('Можно закрывать.')
-    # time.sleep(30)
-    folder_for_new_xlsx = folder_for_find_xlsx + '\\' + exit_files_dir
-
-    try:
-        sum_files(folder_for_new_xlsx, folder_for_find_xlsx)
-    except KeyError as trabl:
-        xls_file = 'сам знаешь'
-        big_trabl(xls_file, trabl)
-
-    # except BaseException as error:
-    #     print(error)
-        # time.sleep(30)
