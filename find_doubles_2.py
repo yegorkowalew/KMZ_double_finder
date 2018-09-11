@@ -169,10 +169,10 @@ def work(work_filename, work_dir, exit_files_dir):
     logger.info('Последняя обрабатываемая строка в таблице:  %s' % (str(second_row)))
 
     # end_coll = 0
-    for col in range(1, sheet.max_column):  # нашел последний столбец в таблице
+    for col in range(1, sheet.max_column): # нашел последний столбец в таблице
         end_coll = col
 
-    for row in range(first_row, second_row):
+    for row in range(first_row, second_row+1):
         if sheet.cell(row=row, column=1).value == "Уз.":
             logger.info('Нашел узел: %s' % (str(sheet.cell(row=row, column=3).value)))
             unit_row = row
@@ -195,7 +195,7 @@ def work(work_filename, work_dir, exit_files_dir):
                 row,)
             units.append(unit)
         else:
-            # print('-- Нашел деталь: '+sheet.cell(row=row, column=3).value)
+            print('-- Нашел деталь: '+sheet.cell(row=row, column=3).value)
             npp += 1
             unit = Detail(
                 npp,
