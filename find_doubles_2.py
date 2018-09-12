@@ -195,28 +195,29 @@ def work(work_filename, work_dir, exit_files_dir):
                 row,)
             units.append(unit)
         else:
-            print('-- Нашел деталь: '+sheet.cell(row=row, column=3).value)
-            npp += 1
-            unit = Detail(
-                npp,
-                sheet.cell(row=row, column=end_names.get('types')[0]).value,
-                sheet.cell(row=row, column=end_names.get('name')[0]).value,
-                sheet.cell(row=row, column=end_names.get('knot')[0]).value,
-                sheet.cell(row=row, column=end_names.get('product')[0]).value,
-                sheet.cell(row=row, column=end_names.get('order')[0]).value,
-                sheet.cell(row=row, column=end_names.get('nzp')[0]).value,
-                sheet.cell(row=row, column=end_names.get('massiv')[0]).value,
-                sheet.cell(row=row, column=end_names.get(
-                    'size_clean')[0]).value,
-                sheet.cell(row=row, column=end_names.get(
-                    'size_workpiece')[0]).value,
-                sheet.cell(row=row, column=end_names.get(
-                    'operations')[0]).value,
-                sheet.cell(row=row, column=end_names.get('shop')[0]).value,
-                [],
-                row,
-                unit_row)
-            details.update({row: unit})
+            if sheet.cell(row=row, column=end_names.get('name')[0]).value:
+                logger.info('Нашел деталь: %s' % (str(sheet.cell(row=row, column=3).value)))
+                npp += 1
+                unit = Detail(
+                    npp,
+                    sheet.cell(row=row, column=end_names.get('types')[0]).value,
+                    sheet.cell(row=row, column=end_names.get('name')[0]).value,
+                    sheet.cell(row=row, column=end_names.get('knot')[0]).value,
+                    sheet.cell(row=row, column=end_names.get('product')[0]).value,
+                    sheet.cell(row=row, column=end_names.get('order')[0]).value,
+                    sheet.cell(row=row, column=end_names.get('nzp')[0]).value,
+                    sheet.cell(row=row, column=end_names.get('massiv')[0]).value,
+                    sheet.cell(row=row, column=end_names.get(
+                        'size_clean')[0]).value,
+                    sheet.cell(row=row, column=end_names.get(
+                        'size_workpiece')[0]).value,
+                    sheet.cell(row=row, column=end_names.get(
+                        'operations')[0]).value,
+                    sheet.cell(row=row, column=end_names.get('shop')[0]).value,
+                    [],
+                    row,
+                    unit_row)
+                details.update({row: unit})
 
     for detail_for_add in details.values():  # нашел дубликаты и дописал их в поле .doubles
         for detail in details.values():
@@ -623,6 +624,7 @@ def sum_files(work_dir, exit_files_dir):
         exit(0)
 
 if __name__ == '__main__':
+    start_time = time.process_time()
     logger.info('Начинаю работу')
     try:
         # полный путь к папке из которой выполняется файл
@@ -661,7 +663,8 @@ if __name__ == '__main__':
             xls_file = 'сам знаешь'
             big_trabl(xls_file, trabl)
 
-        print('Можно закрывать.')
+        # print('Можно закрывать.')
+        logger.info('Можно закрывать. Работа закончена за: %s' % round(time.process_time() - start_time, 3))
         time.sleep(30)
 
     except BaseException as error:
